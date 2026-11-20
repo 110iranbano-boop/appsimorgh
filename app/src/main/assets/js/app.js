@@ -1,13 +1,59 @@
 const $=s=>document.querySelector(s); const qsa=s=>Array.from(document.querySelectorAll(s));
-const API_BASE='https://nodejs-by53mz.chbkn.dev/api';
-const API_TOKEN_KEY='simorgh_token';
+const SUPABASE_URL=String(window.SIMORGH_SUPABASE?.url||'').replace(/\/$/,'');
+const SUPABASE_ANON_KEY=String(window.SIMORGH_SUPABASE?.anonKey||'');
+const API_TOKEN_KEY='simorgh_supabase_access_token';
+const REFRESH_TOKEN_KEY='simorgh_supabase_refresh_token';
+const USER_KEY='simorgh_supabase_user';
 function latinDigits(value){return String(value||'').replace(/[۰-۹٠-٩]/g,d=>'۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩'.indexOf(d)%10)}
+function normalizeIranPhone(value){
+ let p=latinDigits(value).replace(/[\s()-]/g,'');
+ if(p.startsWith('0098'))p='+'+p.slice(2);
+ else if(p.startsWith('98'))p='+'+p;
+ else if(/^09\\d{9}$/.test(p))p='+98'+p.slice(1);
+ else if(/^9\\d{9}$/.test(p))p='+98'+p;
+ if(!/^\\+989\\d{9}$/.test(p))throw new Error('شماره موبایل را با قالب معتبر ایران وارد کنید؛ مانند 09123456789.');
+ return p;
+}
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
-async function apiRequest(path,body){
- const response=await fetch(API_BASE+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+function assertSupabaseConfig(){
+ if(!/^https:\\/\\/[a-z0-9-]+\\.supabase\\.co$/i.test(SUPABASE_URL)||!SUPABASE_ANON_KEY||SUPABASE_ANON_KEY.includes('YOUR_SUPABASE'))throw new Error('تنظیمات Supabase هنوز کامل نشده است. فایل supabase-config.js باید با Project URL و کلید anon پر شود.');
+}
+async function supabaseAuth(path,body,accessToken){
+ assertSupabaseConfig();
+ const headers={'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+(accessToken||SUPABASE_ANON_KEY)};
+ const response=await fetch(SUPABASE_URL+'/auth/v1/'+path,{method:'POST',headers,body:JSON.stringify(body||{})});
  let data={};try{data=await response.json()}catch(_){}
- if(!response.ok||data.success===false)throw new Error(data.message||data.error||'درخواست ناموفق بود. کد: '+response.status);
+ if(!response.ok)throw new Error(data.msg||data.message||data.error_description||data.error||'خطای احراز هویت Supabase ('+response.status+')');
  return data;
+}
+function saveSupabaseSession(data){
+ if(!data||!data.access_token)throw new Error('از Supabase نشست ورود دریافت نشد. تأیید شماره موبایل را در تنظیمات Supabase غیرفعال کنید.');
+ localStorage.setItem(API_TOKEN_KEY,data.access_token);
+ if(data.refresh_token)localStorage.setItem(REFRESH_TOKEN_KEY,data.refresh_token);
+ if(data.user)localStorage.setItem(USER_KEY,JSON.stringify(data.user));
+ localStorage.setItem('simorgh_logged','1');
+ const user=data.user||{};
+ const metadata=user.user_metadata||{};
+ const displayName=metadata.full_name||metadata.name||user.phone||'عضو سیمرغ';
+ localStorage.setItem('simorgh_name',displayName);
+ demo.name=displayName;demo.logged=true;
+}
+async function supabaseSignUp(phone,password,fullName){
+ const data=await supabaseAuth('signup',{phone,password,data:{full_name:fullName}});
+ if(data.access_token)saveSupabaseSession(data);
+ else throw new Error('حساب ایجاد شد اما نشست ورود صادر نشد. در Supabase از مسیر Authentication > Providers > Phone، تأیید شماره تلفن (Confirm phone) را غیرفعال کنید و دوباره تلاش کنید.');
+ return data;
+}
+async function supabaseSignIn(phone,password){
+ const data=await supabaseAuth('token?grant_type=password',{phone,password});
+ saveSupabaseSession(data);
+ return data;
+}
+async function supabaseSignOut(){
+ const token=localStorage.getItem(API_TOKEN_KEY);
+ if(token){try{await supabaseAuth('logout',{},token)}catch(_){}}
+ [API_TOKEN_KEY,REFRESH_TOKEN_KEY,USER_KEY,'simorgh_logged','simorgh_name'].forEach(k=>localStorage.removeItem(k));
+ demo.name='مهمان سیمرغ';demo.logged=false;
 }
 const demo={name:localStorage.getItem('simorgh_name')||'مهمان سیمرغ',points:120,logged:localStorage.getItem('simorgh_logged')==='1'&&!!localStorage.getItem(API_TOKEN_KEY),requests:[],posts:[
  {title:'کتابی که مسیر فکری‌تان را تغییر داد',body:'دوستان، دوست دارم درباره کتاب‌هایی گفت‌وگو کنیم که نگاه ما به زندگی را تغییر داده‌اند.',author:'نگار',comments:['برای من انسان در جست‌وجوی معنا بود.']},
@@ -73,20 +119,14 @@ if(a==='login'){
    try{
     if(registering){
      const full_name=$('#fullName').value.trim();
-     await apiRequest('/register',{full_name,username:phone,password});
-     message.textContent='ثبت‌نام با موفقیت انجام شد. اکنون با شماره تماس و رمز عبور وارد شوید.';
-     toast('حساب کاربری ایجاد شد');
-     authForm('login');
+     const normalizedPhone=normalizeIranPhone(phone);
+     await supabaseSignUp(normalizedPhone,password,full_name);
+     message.textContent='حساب کاربری با موفقیت ساخته شد. اکنون می‌توانید وارد شوید.';
+     toast('ثبت‌نام موفق بود');
+     $('#modalRoot').innerHTML='';render();
     }else{
-     const data=await apiRequest('/login',{username:phone,password});
-     const token=data.token||(data.data&&data.data.token);
-     if(!token)throw new Error('ورود از سرور پاسخ گرفت، اما توکن احراز هویت دریافت نشد.');
-     const user=data.user||(data.data&&data.data.user)||{};
-     const displayName=user.full_name||user.name||user.username||phone;
-     localStorage.setItem(API_TOKEN_KEY,token);
-     localStorage.setItem('simorgh_name',displayName);
-     localStorage.setItem('simorgh_logged','1');
-     demo.name=displayName;demo.logged=true;
+     const normalizedPhone=normalizeIranPhone(phone);
+     await supabaseSignIn(normalizedPhone,password);
      $('#modalRoot').innerHTML='';render();toast('ورود موفقیت‌آمیز بود');
     }
    }catch(error){
@@ -97,7 +137,7 @@ if(a==='login'){
  };
  authForm('login');return
 }
-if(a==='logout'){modal('خروج از حساب کاربری','<p class="muted">آیا می‌خواهید از حساب کاربری خارج شوید؟</p><button class="btn danger" id="confirmLogout">خروج از حساب</button>');$('#confirmLogout').onclick=()=>{localStorage.removeItem(API_TOKEN_KEY);localStorage.removeItem('simorgh_logged');localStorage.removeItem('simorgh_name');demo.name='مهمان سیمرغ';demo.logged=false;$('#modalRoot').innerHTML='';render();toast('از حساب خارج شدید')};return}
+if(a==='logout'){modal('خروج از حساب کاربری','<p class="muted">آیا می‌خواهید از حساب کاربری خارج شوید؟</p><button class="btn danger" id="confirmLogout">خروج از حساب</button>');$('#confirmLogout').onclick=async()=>{await supabaseSignOut();$('#modalRoot').innerHTML='';render();toast('از حساب خارج شدید')};return}
 if(a==='editprofile'){modal('ویرایش نام نمایشی','<form id="profileForm" class="form"><div class="field"><label>نام نمایشی</label><input id="newName" required maxlength="80" value="'+escapeHtml(demo.name)+'"></div><button class="btn">ذخیره</button></form>');$('#profileForm').onsubmit=ev=>{ev.preventDefault();demo.name=$('#newName').value;localStorage.setItem('simorgh_name',demo.name);$('#modalRoot').innerHTML='';render()};return}
 if(a==='newpost'){modal('ایجاد تاپیک','<form class="form" id="postForm"><div class="field"><label>عنوان</label><input id="postTitle" required></div><div class="field"><label>متن</label><textarea id="postBody" required></textarea></div><button class="btn">انتشار آزمایشی</button></form>');$('#postForm').onsubmit=ev=>{ev.preventDefault();demo.posts.unshift({title:$('#postTitle').value,body:$('#postBody').value,author:demo.name,comments:[]});$('#modalRoot').innerHTML='';render();toast('تاپیک نمایشی افزوده شد')};return}
 if(a==='reply'){const i=Number(b.dataset.index);modal('پاسخ به گفت‌وگو','<form class="form" id="replyForm"><div class="field"><label>متن پاسخ</label><textarea id="replyText" required></textarea></div><button class="btn">ارسال پاسخ</button></form>');$('#replyForm').onsubmit=ev=>{ev.preventDefault();demo.posts[i].comments.push($('#replyText').value);$('#modalRoot').innerHTML='';render()};return}
