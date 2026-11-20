@@ -1,4 +1,4 @@
-const $=s=>document.querySelector(s), $=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s); const $=s=>Array.from(document.querySelectorAll(s));
 const API_BASE='https://nodejs-by53mz.chbkn.dev/api';
 const API_TOKEN_KEY='simorgh_token';
 function latinDigits(value){return String(value||'').replace(/[۰-۹٠-٩]/g,d=>'۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩'.indexOf(d)%10)}
