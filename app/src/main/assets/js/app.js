@@ -1,4 +1,4 @@
-const $=s=>document.querySelector(s); const $=s=>Array.from(document.querySelectorAll(s));
+const $=s=>document.querySelector(s); const qsa=s=>Array.from(document.querySelectorAll(s));
 const API_BASE='https://nodejs-by53mz.chbkn.dev/api';
 const API_TOKEN_KEY='simorgh_token';
 function latinDigits(value){return String(value||'').replace(/[۰-۹٠-٩]/g,d=>'۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩'.indexOf(d)%10)}
@@ -24,7 +24,7 @@ const categoryData={
 let selectedCategory='', selectedItem=null;
 
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2300)}
-function go(p){page=p;render();$$('.bottom-nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));window.scrollTo(0,0)}
+function go(p){page=p;render();qsa('.bottom-nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));window.scrollTo(0,0)}
 function card(x,cls=''){return '<article class="item-card"><div class="art '+cls+'">'+x.icon+'</div><div class="item-body"><strong>'+x.name+'</strong><p>'+(x.by||x.desc||'')+'</p><div class="item-foot"><span class="price">'+(x.price||x.type||'')+'</span><button class="btn small secondary" data-action="'+(x.type==='امانی'?'borrow':x.type==='فروشی'?'buy':'product')+'" data-name="'+x.name+'">جزئیات</button></div></div></article>'}
 function head(title,sub){return '<h1 class="page-title">'+title+'</h1><p class="page-sub">'+sub+'</p>'}
 function categoryLanding(section,title,sub){const cats=categoryData[section]||[];return head(title,sub)+'<div class="category-grid">'+cats.map((c,i)=>'<button class="category-card cat-'+section+'" data-action="open-category" data-section="'+section+'" data-cat="'+i+'"><span class="category-art">'+c[1]+'</span><strong>'+c[0]+'</strong><small>'+c[2]+'</small><span class="category-arrow">←</span></button>').join('')+'</div>'}
