@@ -1,4 +1,13 @@
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s), $=s=>[...document.querySelectorAll(s)];
+const API_BASE='https://nodejs-by53mz.chbkn.dev/api';
+const API_TOKEN_KEY='simorgh_token';
+function latinDigits(value){return String(value||'').replace(/[۰-۹٠-٩]/g,d=>'۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩'.indexOf(d)%10)}
+async function apiRequest(path,body){
+ const response=await fetch(API_BASE+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ let data={};try{data=await response.json()}catch(_){}
+ if(!response.ok||data.success===false)throw new Error(data.message||data.error||'درخواست ناموفق بود. کد: '+response.status);
+ return data;
+}
 const demo={name:localStorage.getItem('simorgh_name')||'مهمان سیمرغ',points:120,logged:localStorage.getItem('simorgh_logged')==='1',requests:[],posts:[
  {title:'کتابی که مسیر فکری‌تان را تغییر داد',body:'دوستان، دوست دارم درباره کتاب‌هایی گفت‌وگو کنیم که نگاه ما به زندگی را تغییر داده‌اند.',author:'نگار',comments:['برای من انسان در جست‌وجوی معنا بود.']},
  {title:'پیشنهاد برای نشست پنجشنبه',body:'چه موضوعی را برای دورهمی کتاب‌خوانی این هفته پیشنهاد می‌کنید؟',author:'علی',comments:[]}
@@ -42,7 +51,51 @@ if(a==='close'){$('#modalRoot').innerHTML='';return}
 if(a==='borrow'||a==='buy'||a==='product'){const name=b.dataset.name;modal('جزئیات: '+name,'<p class="muted">برای این مورد می‌توان درخواست خود را ثبت کرد. در نسخه متصل، درخواست در سرور چابکان ذخیره و توسط مدیر بررسی می‌شود.</p><button class="btn" id="confirmReq">ثبت درخواست</button>');$('#confirmReq').onclick=()=>submitRequest((a==='borrow'?'درخواست امانت: ':a==='buy'?'درخواست خرید: ':'مشاهده محصول: ')+name);return}
 if(a==='suggest'){modal('پیشنهاد یا تهیه کتاب','<form class="form" id="reqForm"><div class="field"><label>نام کتاب</label><input required id="reqName" placeholder="عنوان کتاب"></div><div class="field"><label>توضیحات</label><textarea id="reqDesc" placeholder="نام نویسنده یا توضیحات تکمیلی"></textarea></div><button class="btn">ثبت درخواست</button></form>');$('#reqForm').onsubmit=ev=>{ev.preventDefault();submitRequest('پیشنهاد کتاب: '+$('#reqName').value)};return}
 if(a==='event'){const ev=demo.events[Number(b.dataset.index)];modal('ثبت‌نام رویداد','<p class="muted">'+ev.title+'<br>'+ev.date+'<br>امتیاز و قوانین نهایی پس از اتصال سامانه از سرور دریافت می‌شوند.</p><form class="form" id="eventForm"><div class="field"><label>نام و نام خانوادگی</label><input required placeholder="نام کامل"></div><div class="field"><label>شماره تماس</label><input required inputmode="tel" placeholder="شماره تماس"></div><button class="btn">ثبت‌نام آزمایشی</button></form>');$('#eventForm').onsubmit=ev2=>{ev2.preventDefault();submitRequest('ثبت‌نام رویداد: '+ev.title)};return}
-if(a==='login'){modal('ورود / ثبت‌نام','<form class="form" id="loginForm"><div class="field"><label>شماره تماس</label><input id="phone" required inputmode="tel" placeholder="09xxxxxxxxx"></div><div class="field"><label>رمز عبور</label><input id="pass" required type="password" placeholder="رمز عبور"></div><button class="btn">ورود نمایشی</button></form><p class="muted">احراز هویت واقعی پس از اتصال API پیاده‌سازی می‌شود.</p>');$('#loginForm').onsubmit=ev=>{ev.preventDefault();demo.name='عضو سیمرغ';demo.logged=true;localStorage.setItem('simorgh_name',demo.name);localStorage.setItem('simorgh_logged','1');$('#modalRoot').innerHTML='';render();toast('ورود نمایشی انجام شد')};return}
+if(a==='login'){
+ const authForm=(mode='login')=>{
+  const registering=mode==='register';
+  modal(registering?'ثبت‌نام عضویت سیمرغ':'ورود به حساب کاربری',
+   '<form class="form" id="authForm">'+
+   (registering?'<div class="field"><label>نام و نام خانوادگی</label><input id="fullName" required minlength="2" autocomplete="name" placeholder="نام کامل"></div>':'')+
+   '<div class="field"><label>شماره تماس</label><input id="authPhone" required inputmode="tel" autocomplete="tel" placeholder="09xxxxxxxxx"></div>'+
+   '<div class="field"><label>رمز عبور</label><input id="authPass" required type="password" minlength="8" autocomplete="'+(registering?'new-password':'current-password')+'" placeholder="حداقل ۸ کاراکتر"></div>'+
+   '<button class="btn" id="authSubmit">'+(registering?'ایجاد حساب':'ورود')+'</button></form>'+
+   '<p class="muted" id="authMessage">'+(registering?'با ثبت‌نام، حساب کاربری شما در سرور سیمرغ ایجاد می‌شود.':'برای ورود، شماره تماس و رمز عبور ثبت‌شده را وارد کنید.')+'</p>'+
+   '<button class="btn secondary" id="authSwitch">'+(registering?'قبلاً حساب دارم؛ ورود':'حساب ندارم؛ ثبت‌نام')+'</button>');
+  $('#authSwitch').onclick=()=>authForm(registering?'login':'register');
+  $('#authForm').onsubmit=async ev=>{
+   ev.preventDefault();
+   const phone=latinDigits($('#authPhone').value).trim();
+   const password=$('#authPass').value;
+   const submit=$('#authSubmit'),message=$('#authMessage');
+   submit.disabled=true;submit.textContent='در حال ارتباط با سرور...';
+   try{
+    if(registering){
+     const full_name=$('#fullName').value.trim();
+     await apiRequest('/register',{full_name,username:phone,password});
+     message.textContent='ثبت‌نام با موفقیت انجام شد. اکنون با شماره تماس و رمز عبور وارد شوید.';
+     toast('حساب کاربری ایجاد شد');
+     authForm('login');
+    }else{
+     const data=await apiRequest('/login',{username:phone,password});
+     const token=data.token||(data.data&&data.data.token);
+     if(!token)throw new Error('ورود از سرور پاسخ گرفت، اما توکن احراز هویت دریافت نشد.');
+     const user=data.user||(data.data&&data.data.user)||{};
+     const displayName=user.full_name||user.name||user.username||phone;
+     localStorage.setItem(API_TOKEN_KEY,token);
+     localStorage.setItem('simorgh_name',displayName);
+     localStorage.setItem('simorgh_logged','1');
+     demo.name=displayName;demo.logged=true;
+     $('#modalRoot').innerHTML='';render();toast('ورود موفقیت‌آمیز بود');
+    }
+   }catch(error){
+    message.textContent=error.message||'ارتباط با سرور برقرار نشد.';
+    submit.disabled=false;submit.textContent=registering?'ایجاد حساب':'ورود';
+   }
+  };
+ };
+ authForm('login');return
+}
 if(a==='editprofile'){modal('ویرایش نام نمایشی','<form id="profileForm" class="form"><div class="field"><label>نام نمایشی</label><input id="newName" required value="'+demo.name+'"></div><button class="btn">ذخیره</button></form>');$('#profileForm').onsubmit=ev=>{ev.preventDefault();demo.name=$('#newName').value;localStorage.setItem('simorgh_name',demo.name);$('#modalRoot').innerHTML='';render()};return}
 if(a==='newpost'){modal('ایجاد تاپیک','<form class="form" id="postForm"><div class="field"><label>عنوان</label><input id="postTitle" required></div><div class="field"><label>متن</label><textarea id="postBody" required></textarea></div><button class="btn">انتشار آزمایشی</button></form>');$('#postForm').onsubmit=ev=>{ev.preventDefault();demo.posts.unshift({title:$('#postTitle').value,body:$('#postBody').value,author:demo.name,comments:[]});$('#modalRoot').innerHTML='';render();toast('تاپیک نمایشی افزوده شد')};return}
 if(a==='reply'){const i=Number(b.dataset.index);modal('پاسخ به گفت‌وگو','<form class="form" id="replyForm"><div class="field"><label>متن پاسخ</label><textarea id="replyText" required></textarea></div><button class="btn">ارسال پاسخ</button></form>');$('#replyForm').onsubmit=ev=>{ev.preventDefault();demo.posts[i].comments.push($('#replyText').value);$('#modalRoot').innerHTML='';render()};return}
