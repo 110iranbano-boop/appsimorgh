@@ -13,7 +13,7 @@ A reusable template for creating Android apps with WebView that load local HTML/
 1. Customize these files:
    · app/build.gradle - Change namespace and applicationId to com.yourname.yourapp
    · app/src/main/res/values/strings.xml - Change app_name to your app name
-   · settings.gradle - Change rootProject.name to your project name
+   · settings.gradle - Change  rootProject.name to your project name
    · Move app/src/main/java/com/example/webviewapp/ to match your package name
    · Update package declaration in MainActivity.java
 2. Add your web files:
