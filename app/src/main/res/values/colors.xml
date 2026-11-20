@@ -1,9 +1,10 @@
 <resources>
-    <color name="purple_500">#6200EE</color>
-    <color name="purple_700">#3700B3</color>
-    <color name="teal_200">#03DAC5</color>
-    <color name="teal_700">#018786</color>
+    <color name="simorgh_primary">#245B55</color>
+    <color name="simorgh_primary_dark">#163A38</color>
+    <color name="simorgh_gold">#D5A65B</color>
+    <color name="simorgh_gold_dark">#A67D3F</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
-    <color name="splash_background">#6200EE</color>
+    <color name="splash_background">#10191B</color>
+    <color name="simorgh_background">#10191B</color>
 </resources>
