@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Android WebView Template"
+rootProject.name = "Cafe Ketab Simorgh"
 include ':app'
