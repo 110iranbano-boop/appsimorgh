@@ -1,46 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <meta name="theme-color" content="#6200EE">
-    <title>WebView App</title>
-    <link rel="stylesheet" href="file:///android_asset/css/app.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#10191b">
+<title>کافه‌کتاب سیمرغ</title>
+<link rel="stylesheet" href="file:///android_asset/css/app.css">
 </head>
 <body>
-    <div class="app-container">
-        <div class="header">
-            <h1>🚀 WebView App Template</h1>
-            <p>Your Android WebView app is ready!</p>
-        </div>
-        
-        <div class="content">
-            <h2>Welcome to Your App</h2>
-            <p>This is a mobile-optimized web app running in Android WebView.</p>
-            
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h3>Mobile Optimized</h3>
-                    <p>Responsive design that works on all devices.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>Fast Loading</h3>
-                    <p>Local assets load instantly.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>Auto Updates</h3>
-                    <p>GitHub Actions builds APK automatically.</p>
-                </div>
-            </div>
-            
-            <button class="btn" onclick="showWelcome()">Get Started</button>
-        </div>
-    </div>
-
-    <script>
-        function showWelcome() {
-            alert('Welcome! Add your HTML/CSS/JS files to build your app.');
-        }
-    </script>
+<div id="app">
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="منو">☰</button>
+  <div class="brand"><span class="brand-mark">س</span><div><strong>کافه‌کتاب سیمرغ</strong><small>پاتوقی برای دانایی و آفرینش</small></div></div>
+  <button class="profile-mini" data-page="profile"><span class="avatar">م</span><span id="headerName">مهمان</span></button>
+</header>
+<main id="view" class="view"></main>
+<nav class="bottom-nav" id="bottomNav">
+ <button data-page="home" class="active"><b>⌂</b><small>خانه</small></button>
+ <button data-page="library"><b>▤</b><small>کتابخانه</small></button>
+ <button data-page="events"><b>✦</b><small>رویدادها</small></button>
+ <button data-page="store"><b>◇</b><small>فروشگاه</small></button>
+ <button data-page="forum"><b>☷</b><small>تالار</small></button>
+</nav>
+<div id="toast" class="toast"></div>
+<div id="modalRoot"></div>
+</div>
+<script src="file:///android_asset/js/app.js"></script>
 </body>
 </html>
