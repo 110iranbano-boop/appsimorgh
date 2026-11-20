@@ -9,14 +9,14 @@ function normalizeIranPhone(value){
  let p=latinDigits(value).replace(/[\s()-]/g,'');
  if(p.startsWith('0098'))p='+'+p.slice(2);
  else if(p.startsWith('98'))p='+'+p;
- else if(/^09\\d{9}$/.test(p))p='+98'+p.slice(1);
- else if(/^9\\d{9}$/.test(p))p='+98'+p;
- if(!/^\\+989\\d{9}$/.test(p))throw new Error('شماره موبایل را با قالب معتبر ایران وارد کنید؛ مانند 09123456789.');
+ else if(/^09\d{9}$/.test(p))p='+98'+p.slice(1);
+ else if(/^9\d{9}$/.test(p))p='+98'+p;
+ if(!/^\+989\d{9}$/.test(p))throw new Error('شماره موبایل را با قالب معتبر ایران وارد کنید؛ مانند 09123456789.');
  return p;
 }
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function assertSupabaseConfig(){
- if(!/^https:\\/\\/[a-z0-9-]+\\.supabase\\.co$/i.test(SUPABASE_URL)||!SUPABASE_ANON_KEY||SUPABASE_ANON_KEY.includes('YOUR_SUPABASE'))throw new Error('تنظیمات Supabase هنوز کامل نشده است. فایل supabase-config.js باید با Project URL و کلید anon پر شود.');
+ if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(SUPABASE_URL)||!SUPABASE_ANON_KEY||SUPABASE_ANON_KEY.includes('YOUR_SUPABASE'))throw new Error('تنظیمات Supabase هنوز کامل نشده است. فایل supabase-config.js باید با Project URL و کلید anon پر شود.');
 }
 async function supabaseAuth(path,body,accessToken){
  assertSupabaseConfig();
